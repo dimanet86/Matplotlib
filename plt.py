@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 # data loading
 data = pd.read_csv('AB_NYC_2019.csv')
@@ -114,3 +115,60 @@ plt.show()
 5. Time Series Analysis of Reviews
 Plot: Create a line plot to show the trend of number_of_reviews over time (last_review) for each neighbourhood_group.
 """
+# This task so far doesn't make sense for me. number_of_reviews column is a number of reviews for particular listing 
+# (total, not over time)
+# last_review column is also column designating date of last review for particular room, but I cannot 'dissect' number of 
+# reviews over time, at least I cannot see how to aquire this data now.
+# Would you be so kind to give a little clue on this in a review? Thank you. 
+
+data['ones'] = [1 for i in range(data.shape[0])]
+time_data = data.copy()
+time_data['last_review'] = pd.to_datetime(time_data['last_review'], errors='coerce')
+time_data = time_data[time_data['last_review'].notna()] # let's get rid of rows with NaT in last-review cells. 
+time_data.set_index('last_review', inplace=True)
+time_data = time_data[['neighbourhood_group', 'price', 'ones']]
+time_data.groupby('neighbourhood_group').resample('ME').sum()
+
+"""
+6. Price and Availability Heatmap
+Plot: Generate a heatmap to visualize the relationship between price and availability_365 across different neighborhoods.
+Details: Use a color gradient to represent the intensity of the relationship, label the axes, and include a color bar for reference.
+"""
+# Again after trying some approaches, I cannot understand how can I group and aggregate data for heatmap
+# Looks like it makes no sense in relating columns in question with each other:
+# I can group data by neighbourhoods, but it looks like that it's impossible to group data further
+# to obtain correct domain and range for heatmap
+# I only can kindly ask if reviwer could give a clue in review, if I am wrong. Thank you.
+
+aggregate = data.groupby('neighbourhood_group')['price'].mean()
+avg_price = []
+groups = []
+availability = []
+
+"""
+7. Room Type and Review Count Analysis
+Plot: Create a stacked bar plot to display the number_of_reviews for each room_type across the neighbourhood_group.
+Details: Stack the bars by room type, use different colors for each room type, and add titles, axis labels, and a legend.
+"""
+room_types = tuple(data['room_type'].unique()) # species
+neighbourhood_groups = tuple(data['neighbourhood_group'].unique())
+grouped_data = data.groupby(['room_type', 'neighbourhood_group'])['number_of_reviews'].mean()
+weight_counts = {x: [] for x in neighbourhood_groups}
+
+for neighbourhood_group in neighbourhood_groups:
+    for room_type in room_types:
+        weight_counts[neighbourhood_group].append(grouped_data[(room_type, neighbourhood_group)])
+
+width = 0.5
+
+fig, ax = plt.subplots()
+bottom = np.zeros(3)
+
+for boolean, weight_count in weight_counts.items():
+    p = ax.bar(room_types, weight_count, width, label=boolean, bottom=bottom)
+    bottom += weight_count
+
+ax.set_title("Number_of_reviews for each room_type across the neighbourhood_group.")
+ax.legend(loc="upper right")
+
+plt.show()
